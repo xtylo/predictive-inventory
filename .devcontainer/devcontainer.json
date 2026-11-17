@@ -1,0 +1,34 @@
+// Development environment for the Predictive Inventory System.
+// Everything (Go toolchain, PostgreSQL, Redis) runs in containers,
+// so nothing has to be installed on the host besides Docker and VS Code.
+{
+  "name": "predictive-inventory",
+
+  // The dev environment is a Compose stack: one container to code in,
+  // plus the backing services the API depends on.
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspaces/predictive-inventory",
+
+  "features": {
+    // Docker CLI inside the container, talking to the host's Docker engine.
+    // Needed to build the service image and, later, for testcontainers-go.
+    // "moby": false installs the Docker CE CLI; the Moby packages are not
+    // published for the Debian release this Go image is based on.
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+
+  // The API listens on 8080; forwarding makes it reachable from the host browser.
+  "forwardPorts": [8080],
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  },
+
+  // Quick sanity check printed at the end of the container build.
+  "postCreateCommand": "go version"
+}

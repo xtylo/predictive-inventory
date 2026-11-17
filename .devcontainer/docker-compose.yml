@@ -1,0 +1,45 @@
+# Dev container stack: the coding container plus its backing services.
+# Service names (postgres, redis) double as hostnames inside this network.
+services:
+  dev:
+    # Official Go dev container image; tag "1" tracks the latest Go 1.x release.
+    image: mcr.microsoft.com/devcontainers/go:1
+    volumes:
+      # Mount the repository root into the container.
+      - ..:/workspaces/predictive-inventory:cached
+    # Keep the container alive; VS Code attaches to it.
+    command: sleep infinity
+    environment:
+      POSTGRES_DSN: postgres://inventory:inventory@postgres:5432/inventory?sslmode=disable
+      REDIS_ENDPOINT: redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: inventory
+      POSTGRES_DB: inventory
+    volumes:
+      # Named volume so data survives container rebuilds.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory -d inventory"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

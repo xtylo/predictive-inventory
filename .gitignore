@@ -1,0 +1,14 @@
+# Build output
+bin/
+
+# Local environment and secrets
+.env
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Editor / OS
+.vscode/
+.DS_Store

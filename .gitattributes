@@ -1,0 +1,3 @@
+# Force LF line endings so shell scripts and Go files behave the same
+# on Windows hosts and inside Linux containers.
+* text=auto eol=lf
