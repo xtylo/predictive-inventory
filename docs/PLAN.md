@@ -127,7 +127,11 @@ Every session ends with something that runs and a commit. If a session runs long
 - **Session 1 — done (2026-11-16).** Dev container running (Go 1.27, PostgreSQL 17, Redis 7); module `github.com/xtylo/predictive-inventory`; Gin `GET /health`; `internal/config` with tests; multi-stage `Dockerfile` verified.
   - The Docker feature needs `"moby": false` on this base image.
   - To run the built image next to the dev stack: `docker run --network predictive-inventory_devcontainer_default -e POSTGRES_DSN -e REDIS_ENDPOINT predictive-inventory`, then reach it as `api:8080`.
-- **Next: session 2** — migrations, seed, `POST /sales` with `SELECT ... FOR UPDATE`.
+- **Session 2 — done (2026-11-19).** goose migrations embedded with `go:embed` and applied at startup; `pgxpool` store; `POST /sales` with `SELECT ... FOR UPDATE`, `Idempotency-Key` header (201 new, 200 replay, 400, 404, 409); `scripts/seed.sql` (SKU-0..SKU-99, 1000 units); `testcontainers-go` tests: 50 buyers for 30 units, 10 concurrent retries of one key, unknown SKU — all passing with `-race`.
+  - Added beyond the README: idempotency keys, since `FOR UPDATE` alone prevents races but not duplicate retries.
+  - Load the seed with `docker exec -i predictive-inventory_devcontainer-postgres-1 psql -U inventory < scripts/seed.sql`.
+  - Lesson: a machine restart wiped all uncommitted work. Commit after every step.
+- **Next: session 3** — Redis cache layer and `GET /inventory/:sku`.
 
 ## 7. Before session 1
 
