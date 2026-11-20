@@ -131,7 +131,11 @@ Every session ends with something that runs and a commit. If a session runs long
   - Added beyond the README: idempotency keys, since `FOR UPDATE` alone prevents races but not duplicate retries.
   - Load the seed with `docker exec -i predictive-inventory_devcontainer-postgres-1 psql -U inventory < scripts/seed.sql`.
   - Lesson: a machine restart wiped all uncommitted work. Commit after every step.
-- **Next: session 3** — Redis cache layer and `GET /inventory/:sku`.
+- **Session 3 — done (2026-11-19).** `internal/cache` stores forecasts as JSON in Redis (`forecast:<sku>`, 24h TTL) with `miniredis` tests; `internal/planning.ReorderQuantity` (target = ceil(demand × 1.5), never negative) with table-driven tests; `GET /inventory/:sku` (200 ok, 200 `forecast_pending`, 404, 500) with `httptest` and fake dependencies; `store.GetStock` integration test.
+  - A missing forecast is a normal state (`forecast_pending`), not a 500 as in the original sketch.
+  - The dev database can come back empty after Docker recreates its volume; re-run the seed if every SKU returns 404.
+  - Set a forecast by hand: `docker exec predictive-inventory_devcontainer-redis-1 redis-cli SET forecast:SKU-1 '{"sku":"SKU-1","demand":800,"horizon_days":30,"generated_at":"2026-11-19T12:00:00Z"}' EX 3600`.
+- **Next: session 4** — `Predictor` interface with a fake, prediction queue with back-pressure (`429`), worker pool, Redis `SET NX` lock, graceful shutdown.
 
 ## 7. Before session 1
 

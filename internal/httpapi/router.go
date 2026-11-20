@@ -7,21 +7,41 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/xtylo/predictive-inventory/internal/cache"
 	"github.com/xtylo/predictive-inventory/internal/store"
 )
 
-// SaleRecorder is everything the HTTP layer needs from storage.
-//
 // Go interfaces are satisfied implicitly: *store.Store never says
 // "implements SaleRecorder", it just has a matching method. The convention
-// is the opposite of C#: the consumer declares the small interface it needs,
-// so tests can pass a fake without touching the store package.
+// is the opposite of C#: the consumer declares the small interfaces it
+// needs, so tests can pass fakes without touching the other packages.
+
+// SaleRecorder records sales (implemented by *store.Store).
 type SaleRecorder interface {
 	RecordSale(ctx context.Context, sale store.Sale) (store.SaleResult, error)
 }
 
+// StockReader reads current stock (implemented by *store.Store).
+type StockReader interface {
+	GetStock(ctx context.Context, sku string) (int, error)
+}
+
+// ForecastReader reads cached forecasts (implemented by *cache.Cache).
+type ForecastReader interface {
+	GetForecast(ctx context.Context, sku string) (cache.Forecast, error)
+}
+
+// Dependencies groups everything the handlers need. A struct keeps
+// NewRouter's signature stable as the service grows, instead of adding
+// one more parameter per feature.
+type Dependencies struct {
+	Sales     SaleRecorder
+	Stock     StockReader
+	Forecasts ForecastReader
+}
+
 // NewRouter wires every route to its handler.
-func NewRouter(sales SaleRecorder) *gin.Engine {
+func NewRouter(deps Dependencies) *gin.Engine {
 	// gin.Default() attaches request logging and panic recovery middlewares.
 	router := gin.Default()
 
@@ -30,8 +50,11 @@ func NewRouter(sales SaleRecorder) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	h := salesHandler{sales: sales}
-	router.POST("/sales", h.create)
+	sales := salesHandler{sales: deps.Sales}
+	router.POST("/sales", sales.create)
+
+	inventory := inventoryHandler{stock: deps.Stock, forecasts: deps.Forecasts}
+	router.GET("/inventory/:sku", inventory.get)
 
 	return router
 }
