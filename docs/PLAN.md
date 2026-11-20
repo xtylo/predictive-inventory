@@ -122,7 +122,14 @@ Every session ends with something that runs and a commit. If a session runs long
 - **Deliverable:** public repository ready to show.
 - **Requires:** an AWS account with credentials configured.
 
-## 6. Before session 1
+## 6. Progress log
+
+- **Session 1 — done (2026-11-16).** Dev container running (Go 1.27, PostgreSQL 17, Redis 7); module `github.com/xtylo/predictive-inventory`; Gin `GET /health`; `internal/config` with tests; multi-stage `Dockerfile` verified.
+  - The Docker feature needs `"moby": false` on this base image.
+  - To run the built image next to the dev stack: `docker run --network predictive-inventory_devcontainer_default -e POSTGRES_DSN -e REDIS_ENDPOINT predictive-inventory`, then reach it as `api:8080`.
+- **Next: session 2** — migrations, seed, `POST /sales` with `SELECT ... FOR UPDATE`.
+
+## 7. Before session 1
 
 - Install Docker Desktop (WSL 2 backend) and VS Code with the Dev Containers extension on Windows. Nothing else goes on the host.
 - Recommended, 1–2 hours on your own: A Tour of Go (https://go.dev/tour), at least through interfaces. That way session 1 goes to the project instead of syntax.

@@ -5,14 +5,15 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"time"
 
 	// Packages of this module are imported by their full path:
 	// module name (from go.mod) + folder.
 	"github.com/xtylo/predictive-inventory/internal/config"
+	"github.com/xtylo/predictive-inventory/internal/httpapi"
+	"github.com/xtylo/predictive-inventory/internal/store"
 )
 
 func main() {
@@ -22,15 +23,26 @@ func main() {
 		log.Fatalf("invalid configuration: %v", err)
 	}
 
-	// gin.Default() returns a router with two middlewares already attached:
-	// request logging and panic recovery.
-	router := gin.Default()
+	// Startup gets a deadline: if the database does not answer within
+	// 10 seconds, the context is cancelled and the calls below return an error.
+	startupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// Liveness endpoint used by Docker, load balancers and smoke tests.
-	// gin.H is just a shortcut for map[string]any.
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	db, err := store.New(startupCtx, cfg.PostgresDSN)
+	if err != nil {
+		log.Fatalf("connect to database: %v", err)
+	}
+	// defer runs when main returns, in reverse order of declaration.
+	defer db.Close()
+
+	applied, err := db.Migrate(startupCtx)
+	if err != nil {
+		log.Fatalf("migrate database: %v", err)
+	}
+	log.Printf("database ready, %d migration(s) applied", applied)
+
+	// *store.Store satisfies httpapi.SaleRecorder implicitly.
+	router := httpapi.NewRouter(db)
 
 	// Go has no exceptions: functions return an error value and the caller
 	// decides what to do with it. Run blocks until the server stops.
