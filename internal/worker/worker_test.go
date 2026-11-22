@@ -1,0 +1,159 @@
+package worker
+
+import (
+	"context"
+	"errors"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/alicebob/miniredis/v2"
+
+	"github.com/xtylo/predictive-inventory/internal/cache"
+	"github.com/xtylo/predictive-inventory/internal/predictor"
+)
+
+// countingPredictor records how many times it is called. It is shared by
+// several worker goroutines, so the counter must be atomic.
+type countingPredictor struct {
+	calls atomic.Int32
+	err   error
+}
+
+func (c *countingPredictor) Predict(context.Context, string) (predictor.Forecast, error) {
+	c.calls.Add(1)
+	if c.err != nil {
+		return predictor.Forecast{}, c.err
+	}
+	return predictor.Forecast{Demand: 10, HorizonDays: 30}, nil
+}
+
+// newTestCache gives the pool a real lock and forecast store backed by an
+// in-memory Redis.
+func newTestCache(t *testing.T) *cache.Cache {
+	t.Helper()
+	server := miniredis.RunT(t)
+	c, err := cache.New(t.Context(), server.Addr(), time.Hour)
+	if err != nil {
+		t.Fatalf("cache.New() error: %v", err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+	return c
+}
+
+func testConfig(workers, queueSize int) Config {
+	return Config{
+		Workers:     workers,
+		QueueSize:   queueSize,
+		DedupWindow: time.Minute,
+		JobTimeout:  time.Second,
+	}
+}
+
+func shutdown(t *testing.T, p *Pool) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := p.Shutdown(ctx); err != nil {
+		t.Fatalf("Shutdown() error: %v", err)
+	}
+}
+
+// A burst of 20 triggers for one SKU, handled by 4 workers in parallel,
+// must reach the model exactly once.
+func TestOnePredictionPerSKUWithinWindow(t *testing.T) {
+	c := newTestCache(t)
+	pred := &countingPredictor{}
+	pool := New(testConfig(4, 100), pred, c, c)
+	pool.Start()
+
+	for range 20 {
+		if err := pool.Enqueue("SKU-1"); err != nil {
+			t.Fatalf("Enqueue() error: %v", err)
+		}
+	}
+	shutdown(t, pool) // drains the queue before returning
+
+	if got := pred.calls.Load(); got != 1 {
+		t.Errorf("predictor calls = %d, want 1", got)
+	}
+
+	forecast, err := c.GetForecast(t.Context(), "SKU-1")
+	if err != nil {
+		t.Fatalf("GetForecast() error: %v", err)
+	}
+	if forecast.Demand != 10 {
+		t.Errorf("stored demand = %d, want 10", forecast.Demand)
+	}
+}
+
+// When a prediction fails the lock is released, so the next trigger
+// retries instead of waiting for the whole dedup window.
+func TestFailedPredictionReleasesLock(t *testing.T) {
+	c := newTestCache(t)
+	pred := &countingPredictor{err: errors.New("model unavailable")}
+	pool := New(testConfig(1, 10), pred, c, c) // 1 worker: jobs run in order
+	pool.Start()
+
+	for range 3 {
+		if err := pool.Enqueue("SKU-1"); err != nil {
+			t.Fatalf("Enqueue() error: %v", err)
+		}
+	}
+	shutdown(t, pool)
+
+	if got := pred.calls.Load(); got != 3 {
+		t.Errorf("predictor calls = %d, want 3", got)
+	}
+}
+
+// With no workers running nothing is consumed, so the queue fills up.
+func TestEnqueueFailsWhenQueueIsFull(t *testing.T) {
+	pool := New(testConfig(0, 2), &countingPredictor{}, nil, nil)
+
+	for i := range 2 {
+		if err := pool.Enqueue("SKU-1"); err != nil {
+			t.Fatalf("Enqueue() #%d error: %v", i+1, err)
+		}
+	}
+	if err := pool.Enqueue("SKU-1"); !errors.Is(err, ErrQueueFull) {
+		t.Errorf("third Enqueue() = %v, want ErrQueueFull", err)
+	}
+}
+
+func TestEnqueueFailsAfterShutdown(t *testing.T) {
+	pool := New(testConfig(1, 10), &countingPredictor{}, nil, nil)
+	pool.Start()
+	shutdown(t, pool)
+
+	if err := pool.Enqueue("SKU-1"); !errors.Is(err, ErrClosed) {
+		t.Errorf("Enqueue() after Shutdown = %v, want ErrClosed", err)
+	}
+}
+
+// A prediction that would take an hour must not hold shutdown hostage:
+// once the deadline passes, in-flight work is cancelled.
+func TestShutdownCancelsSlowWorkAtDeadline(t *testing.T) {
+	c := newTestCache(t)
+	slow := predictor.Fake{Demand: 1, HorizonDays: 30, Delay: time.Hour}
+	cfg := testConfig(1, 10)
+	cfg.JobTimeout = 2 * time.Hour
+	pool := New(cfg, slow, c, c)
+	pool.Start()
+
+	if err := pool.Enqueue("SKU-1"); err != nil {
+		t.Fatalf("Enqueue() error: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	err := pool.Shutdown(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("Shutdown() = %v, want context.DeadlineExceeded", err)
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("Shutdown() took %v, want about 100ms", elapsed)
+	}
+}
