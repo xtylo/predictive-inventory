@@ -135,7 +135,15 @@ Every session ends with something that runs and a commit. If a session runs long
   - A missing forecast is a normal state (`forecast_pending`), not a 500 as in the original sketch.
   - The dev database can come back empty after Docker recreates its volume; re-run the seed if every SKU returns 404.
   - Set a forecast by hand: `docker exec predictive-inventory_devcontainer-redis-1 redis-cli SET forecast:SKU-1 '{"sku":"SKU-1","demand":800,"horizon_days":30,"generated_at":"2026-11-19T12:00:00Z"}' EX 3600`.
-- **Next: session 4** — `Predictor` interface with a fake, prediction queue with back-pressure (`429`), worker pool, Redis `SET NX` lock, graceful shutdown.
+- **Session 4 — done (2026-11-21).** `predictor.Predictor` interface with a `Fake` (fixed demand after a delay); `cache.TryLock`/`Unlock` (`SET NX` with TTL); `internal/worker` pool: bounded channel queue, non-blocking `Enqueue` (`ErrQueueFull`, `ErrClosed`), per-SKU dedup lock held for the whole 5-minute window and released on failure; `POST /forecasts/:sku/refresh` (202, 404, 429 with `Retry-After`, 503); graceful shutdown with `signal.NotifyContext`, `http.Server.Shutdown`, then `Pool.Shutdown`, sharing a 15s deadline. Tests: 20 triggers with 4 workers reach the model once, failed prediction releases the lock, full queue, enqueue after shutdown, slow work cancelled at the deadline.
+  - Deviation from the README: `POST /sales` never returns 429. The sale is already committed when the forecast is queued, so queueing is best effort; back-pressure is exposed on the refresh endpoint instead.
+  - Use a built binary (`go build -o bin/api ./cmd/api`) to test shutdown: `go run` does not reliably forward signals.
+- **Session 5 — done (2026-11-21).** `predictor.Claude`: agent loop on the Anthropic Messages API (official Go SDK v2, `github.com/anthropics/anthropic-sdk-go/v2`) with tools `get_sales_history`, `get_current_stock` and `submit_forecast`; `tool_choice: any` forces a structured answer; tool input validated as untrusted, invalid answers returned with `is_error` so the model self-corrects; max 6 turns and 1024 tokens per call; token usage logged. `store.SalesByDay` (`generate_series` + `LEFT JOIN`, zero-filled days). Forecast `rationale` stored in Redis and returned by `/inventory`. `scripts/seed_sales.sql` adds 90 days of synthetic history (trend, weekend peak, noise) for SKU-0..SKU-9. Tests use an `httptest` fake of `/v1/messages`.
+  - Config: `ANTHROPIC_API_KEY` (empty = fake predictor), `ANTHROPIC_BASE_URL` (empty = Anthropic API), `ANTHROPIC_MODEL` (default `claude-haiku-5-5`).
+  - Development runs on Token Harbor's Anthropic-compatible endpoint with a free model: `ANTHROPIC_BASE_URL=https://tokenharbor.ai`, `ANTHROPIC_MODEL=mimo-v2.6-flash:free`. Switch to a Claude model for the final demo.
+  - First real run, SKU-3: forecast 585 units vs 544 sold in the last 30 days (+7.5%, consistent with the upward trend); the model ignored today's zero as a non-stockout.
+  - Backlog idea: a deterministic baseline (moving average) next to the LLM forecast, to compare accuracy and as a fallback.
+- **Next: session 6** — LocalStack, Terraform and the SQS FIFO reorder queue.
 
 ## 7. Before session 1
 
