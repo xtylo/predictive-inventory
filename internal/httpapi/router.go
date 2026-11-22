@@ -31,13 +31,19 @@ type ForecastReader interface {
 	GetForecast(ctx context.Context, sku string) (cache.Forecast, error)
 }
 
+// PredictionQueue schedules background forecasts (implemented by *worker.Pool).
+type PredictionQueue interface {
+	Enqueue(sku string) error
+}
+
 // Dependencies groups everything the handlers need. A struct keeps
 // NewRouter's signature stable as the service grows, instead of adding
 // one more parameter per feature.
 type Dependencies struct {
-	Sales     SaleRecorder
-	Stock     StockReader
-	Forecasts ForecastReader
+	Sales       SaleRecorder
+	Stock       StockReader
+	Forecasts   ForecastReader
+	Predictions PredictionQueue
 }
 
 // NewRouter wires every route to its handler.
@@ -50,11 +56,14 @@ func NewRouter(deps Dependencies) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	sales := salesHandler{sales: deps.Sales}
+	sales := salesHandler{sales: deps.Sales, predictions: deps.Predictions}
 	router.POST("/sales", sales.create)
 
 	inventory := inventoryHandler{stock: deps.Stock, forecasts: deps.Forecasts}
 	router.GET("/inventory/:sku", inventory.get)
+
+	forecasts := forecastHandler{stock: deps.Stock, predictions: deps.Predictions}
+	router.POST("/forecasts/:sku/refresh", forecasts.refresh)
 
 	return router
 }

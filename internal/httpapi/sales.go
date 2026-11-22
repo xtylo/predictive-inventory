@@ -11,7 +11,8 @@ import (
 )
 
 type salesHandler struct {
-	sales SaleRecorder
+	sales       SaleRecorder
+	predictions PredictionQueue
 }
 
 // Struct tags (the text between backticks) are metadata read at runtime:
@@ -73,6 +74,14 @@ func (h salesHandler) create(c *gin.Context) {
 	status := http.StatusCreated
 	if result.Replayed {
 		status = http.StatusOK
+	} else {
+		// A new sale changes the demand picture, so schedule a forecast.
+		// Best effort: the sale is already committed and must not fail
+		// because the refresh could not be queued. The worker's dedup lock
+		// collapses bursts of sales of one SKU into a single prediction.
+		if err := h.predictions.Enqueue(result.SKU); err != nil {
+			log.Printf("schedule forecast for %s: %v", result.SKU, err)
+		}
 	}
 
 	c.JSON(status, saleResponse{
