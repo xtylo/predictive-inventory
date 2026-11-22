@@ -1,6 +1,7 @@
 // Development environment for the Predictive Inventory System.
-// Everything (Go toolchain, PostgreSQL, Redis) runs in containers,
-// so nothing has to be installed on the host besides Docker and VS Code.
+// Everything (Go toolchain, PostgreSQL, Redis, LocalStack, Terraform)
+// runs in containers, so nothing has to be installed on the host besides
+// Docker and VS Code.
 {
   "name": "predictive-inventory",
 
@@ -12,12 +13,16 @@
 
   "features": {
     // Docker CLI inside the container, talking to the host's Docker engine.
-    // Needed to build the service image and, later, for testcontainers-go.
+    // Needed to build the service image and for testcontainers-go.
     // "moby": false installs the Docker CE CLI; the Moby packages are not
     // published for the Debian release this Go image is based on.
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
-    }
+    },
+    // Infrastructure as code for the SQS queue (and, later, RDS).
+    "ghcr.io/devcontainers/features/terraform:1": {},
+    // AWS CLI to inspect LocalStack and, later, the real account.
+    "ghcr.io/devcontainers/features/aws-cli:1": {}
   },
 
   // The API listens on 8080; forwarding makes it reachable from the host browser.
@@ -25,10 +30,10 @@
 
   "customizations": {
     "vscode": {
-      "extensions": ["golang.go"]
+      "extensions": ["golang.go", "hashicorp.terraform"]
     }
   },
 
   // Quick sanity check printed at the end of the container build.
-  "postCreateCommand": "go version"
+  "postCreateCommand": "go version && terraform -version && aws --version"
 }

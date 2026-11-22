@@ -1,5 +1,6 @@
 # Dev container stack: the coding container plus its backing services.
-# Service names (postgres, redis) double as hostnames inside this network.
+# Service names (postgres, redis, localstack) double as hostnames inside
+# this network.
 services:
   dev:
     # Official Go dev container image; tag "1" tracks the latest Go 1.x release.
@@ -12,11 +13,22 @@ services:
     environment:
       POSTGRES_DSN: postgres://inventory:inventory@postgres:5432/inventory?sslmode=disable
       REDIS_ENDPOINT: redis:6379
+      # AWS SDKs and the AWS CLI read these variables. AWS_ENDPOINT_URL sends
+      # every AWS call to LocalStack; "test" credentials are what it expects.
+      # Unset AWS_ENDPOINT_URL before talking to a real AWS account.
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # LocalStack is not required to start coding, so the dev container
+      # does not wait for it to be healthy.
+      localstack:
+        condition: service_started
 
   postgres:
     image: postgres:17-alpine
@@ -40,6 +52,25 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  localstack:
+    # Pinned on purpose: since March 2026 newer LocalStack images require an
+    # account and auth token. 4.14.0 is the last community release without
+    # that requirement. It no longer receives updates.
+    image: localstack/localstack:4.14.0
+    environment:
+      # Only start the emulated services this project uses.
+      SERVICES: sqs
+       # "off" builds queue URLs as http://<LOCALSTACK_HOST>/<account>/<queue>:
+      # reachable from other containers, and the only format the Terraform
+      # AWS provider accepts ("path" adds a /queue/<region>/ prefix it rejects).
+      SQS_ENDPOINT_STRATEGY: "off"
+      LOCALSTACK_HOST: localstack:4566
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
   postgres-data:
