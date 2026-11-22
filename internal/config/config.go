@@ -27,6 +27,10 @@ type Config struct {
 	AnthropicAPIKey  string
 	AnthropicBaseURL string
 	AnthropicModel   string
+
+	// ReorderQueueURL is the SQS FIFO queue for reorder messages.
+	// Empty disables publishing.
+	ReorderQueueURL string
 }
 
 // Load reads the environment and returns a validated Config.
@@ -43,6 +47,8 @@ func Load() (Config, error) {
 		AnthropicAPIKey:  os.Getenv("ANTHROPIC_API_KEY"),
 		AnthropicBaseURL: os.Getenv("ANTHROPIC_BASE_URL"),
 		AnthropicModel:   getEnv("ANTHROPIC_MODEL", DefaultModel),
+
+		ReorderQueueURL: os.Getenv("SQS_REORDER_QUEUE_URL"),
 	}
 
 	if cfg.PostgresDSN == "" {

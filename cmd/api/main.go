@@ -20,6 +20,7 @@ import (
 	"github.com/xtylo/predictive-inventory/internal/config"
 	"github.com/xtylo/predictive-inventory/internal/httpapi"
 	"github.com/xtylo/predictive-inventory/internal/predictor"
+	"github.com/xtylo/predictive-inventory/internal/reorder"
 	"github.com/xtylo/predictive-inventory/internal/store"
 	"github.com/xtylo/predictive-inventory/internal/worker"
 )
@@ -86,6 +87,29 @@ func main() {
 		log.Print("predictor: fake (set ANTHROPIC_API_KEY to use a model)")
 	}
 
+	// After every forecast, decide whether the SKU needs a reorder.
+	var onForecast func(context.Context, cache.Forecast) error
+	if cfg.ReorderQueueURL != "" {
+		publisher, err := reorder.NewSQSPublisher(startupCtx, cfg.ReorderQueueURL)
+		if err != nil {
+			log.Fatalf("create reorder publisher: %v", err)
+		}
+		evaluator := reorder.NewEvaluator(db, publisher)
+
+		// A closure adapts Evaluate's (bool, error) result to the hook's
+		// signature and logs the decision.
+		onForecast = func(ctx context.Context, f cache.Forecast) error {
+			published, err := evaluator.Evaluate(ctx, f)
+			if published {
+				log.Printf("reorder: %s published", f.SKU)
+			}
+			return err
+		}
+		log.Printf("reorders: publishing to %s", cfg.ReorderQueueURL)
+	} else {
+		log.Print("reorders: disabled (set SQS_REORDER_QUEUE_URL to publish)")
+	}
+
 	// *cache.Cache is both the forecast store and the distributed lock.
 	predictions := worker.New(worker.Config{
 		Workers:     4,
@@ -93,6 +117,7 @@ func main() {
 		DedupWindow: 5 * time.Minute,
 		// An agent loop makes several model calls; give it room.
 		JobTimeout: 60 * time.Second,
+		OnForecast: onForecast,
 	}, model, forecasts, forecasts)
 	predictions.Start()
 

@@ -18,6 +18,7 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("PORT", "")
 	t.Setenv("ANTHROPIC_API_KEY", "")
 	t.Setenv("ANTHROPIC_MODEL", "")
+	t.Setenv("SQS_REORDER_QUEUE_URL", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -32,6 +33,10 @@ func TestLoadDefaults(t *testing.T) {
 	// No key is valid: the service falls back to the fake predictor.
 	if cfg.AnthropicAPIKey != "" {
 		t.Errorf("AnthropicAPIKey = %q, want empty", cfg.AnthropicAPIKey)
+	}
+	// No queue is valid: reorders are simply not published.
+	if cfg.ReorderQueueURL != "" {
+		t.Errorf("ReorderQueueURL = %q, want empty", cfg.ReorderQueueURL)
 	}
 }
 

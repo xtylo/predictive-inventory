@@ -45,6 +45,10 @@ type Config struct {
 	DedupWindow time.Duration
 	// JobTimeout bounds a single prediction.
 	JobTimeout time.Duration
+	// OnForecast, if set, runs after each forecast is stored. Its error is
+	// logged but does not undo the forecast. A function field keeps the
+	// worker unaware of what happens next (reorders, notifications...).
+	OnForecast func(ctx context.Context, f cache.Forecast) error
 }
 
 // Pool is a fixed set of workers reading from a bounded queue.
@@ -177,20 +181,26 @@ func (p *Pool) process(sku string) {
 		return
 	}
 
-	err = p.forecasts.SetForecast(ctx, cache.Forecast{
+	stored := cache.Forecast{
 		SKU:         sku,
 		Demand:      forecast.Demand,
 		HorizonDays: forecast.HorizonDays,
 		GeneratedAt: time.Now().UTC(),
 		Rationale:   forecast.Rationale,
-	})
-	if err != nil {
+	}
+	if err := p.forecasts.SetForecast(ctx, stored); err != nil {
 		log.Printf("worker: store forecast %s: %v", sku, err)
 		p.release(lockName)
 		return
 	}
 
 	log.Printf("worker: %s forecast updated, demand %d", sku, forecast.Demand)
+
+	if p.cfg.OnForecast != nil {
+		if err := p.cfg.OnForecast(ctx, stored); err != nil {
+			log.Printf("worker: after forecast %s: %v", sku, err)
+		}
+	}
 }
 
 // release frees the lock after a failure, so the next trigger can retry

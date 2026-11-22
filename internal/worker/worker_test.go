@@ -157,3 +157,26 @@ func TestShutdownCancelsSlowWorkAtDeadline(t *testing.T) {
 		t.Errorf("Shutdown() took %v, want about 100ms", elapsed)
 	}
 }
+
+func TestOnForecastRunsAfterStoring(t *testing.T) {
+	c := newTestCache(t)
+	cfg := testConfig(1, 10)
+
+	var got []cache.Forecast
+	cfg.OnForecast = func(_ context.Context, f cache.Forecast) error {
+		// Safe without a mutex: the pool has a single worker.
+		got = append(got, f)
+		return nil
+	}
+	pool := New(cfg, &countingPredictor{}, c, c)
+	pool.Start()
+
+	if err := pool.Enqueue("SKU-1"); err != nil {
+		t.Fatalf("Enqueue() error: %v", err)
+	}
+	shutdown(t, pool)
+
+	if len(got) != 1 || got[0].SKU != "SKU-1" || got[0].Demand != 10 {
+		t.Errorf("OnForecast calls = %+v, want one call for SKU-1 with demand 10", got)
+	}
+}
