@@ -182,6 +182,7 @@ func (p *Pool) process(sku string) {
 		Demand:      forecast.Demand,
 		HorizonDays: forecast.HorizonDays,
 		GeneratedAt: time.Now().UTC(),
+		Rationale:   forecast.Rationale,
 	})
 	if err != nil {
 		log.Printf("worker: store forecast %s: %v", sku, err)

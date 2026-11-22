@@ -12,6 +12,8 @@ import (
 type Forecast struct {
 	Demand      int
 	HorizonDays int
+	// Rationale explains the forecast in a sentence; empty for the fake.
+	Rationale string
 }
 
 // Predictor forecasts the demand of one SKU.

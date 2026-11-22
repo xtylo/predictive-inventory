@@ -28,6 +28,7 @@ type forecastResponse struct {
 	Demand      int       `json:"demand"`
 	HorizonDays int       `json:"horizon_days"`
 	GeneratedAt time.Time `json:"generated_at"`
+	Rationale   string    `json:"rationale,omitempty"`
 }
 
 // Pointer fields serialize as JSON null when nil. That is how Go expresses
@@ -79,6 +80,7 @@ func (h inventoryHandler) get(c *gin.Context) {
 		Demand:      forecast.Demand,
 		HorizonDays: forecast.HorizonDays,
 		GeneratedAt: forecast.GeneratedAt,
+		Rationale:   forecast.Rationale,
 	}
 	// &reorder takes the address of the local variable. Go's escape
 	// analysis moves it to the heap, so the pointer stays valid after

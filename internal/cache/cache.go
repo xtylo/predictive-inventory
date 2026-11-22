@@ -24,6 +24,8 @@ type Forecast struct {
 	Demand      int       `json:"demand"`
 	HorizonDays int       `json:"horizon_days"`
 	GeneratedAt time.Time `json:"generated_at"`
+	// Rationale is the model's short explanation of the number.
+	Rationale string `json:"rationale,omitempty"`
 }
 
 // Cache wraps a Redis client. Like pgxpool, a redis.Client manages its own

@@ -9,6 +9,9 @@ import (
 	"os"
 )
 
+// DefaultModel is used when ANTHROPIC_MODEL is not set.
+const DefaultModel = "claude-haiku-5-5"
+
 // Config holds every setting the service needs at startup.
 //
 // Names starting with an uppercase letter are exported (public);
@@ -17,6 +20,13 @@ type Config struct {
 	Port          string
 	PostgresDSN   string
 	RedisEndpoint string
+
+	// The ANTHROPIC_* names follow the convention of Anthropic's SDKs and
+	// tools, so gateways documented for them work here unchanged.
+	// An empty AnthropicAPIKey selects the fake predictor.
+	AnthropicAPIKey  string
+	AnthropicBaseURL string
+	AnthropicModel   string
 }
 
 // Load reads the environment and returns a validated Config.
@@ -29,6 +39,10 @@ func Load() (Config, error) {
 		Port:          getEnv("PORT", "8080"),
 		PostgresDSN:   os.Getenv("POSTGRES_DSN"),
 		RedisEndpoint: os.Getenv("REDIS_ENDPOINT"),
+
+		AnthropicAPIKey:  os.Getenv("ANTHROPIC_API_KEY"),
+		AnthropicBaseURL: os.Getenv("ANTHROPIC_BASE_URL"),
+		AnthropicModel:   getEnv("ANTHROPIC_MODEL", DefaultModel),
 	}
 
 	if cfg.PostgresDSN == "" {

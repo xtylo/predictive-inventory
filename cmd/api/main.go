@@ -66,16 +66,33 @@ func main() {
 	}
 	defer forecasts.Close()
 
-	// The fake predictor stands in for Claude until session 5. The 2-second
-	// delay imitates a slow model call, so the async flow is observable.
-	model := predictor.Fake{Demand: 800, HorizonDays: 30, Delay: 2 * time.Second}
+	// The interface lets the same worker run with a real model or the fake.
+	var model predictor.Predictor
+	if cfg.AnthropicAPIKey != "" {
+		model = predictor.NewClaude(predictor.ClaudeConfig{
+			APIKey:  cfg.AnthropicAPIKey,
+			BaseURL: cfg.AnthropicBaseURL,
+			Model:   cfg.AnthropicModel,
+		}, db)
+		endpoint := cfg.AnthropicBaseURL
+		if endpoint == "" {
+			endpoint = "Anthropic API"
+		}
+		log.Printf("predictor: %s via %s", cfg.AnthropicModel, endpoint)
+	} else {
+		// Without a key the fake keeps the service usable at no cost. The
+		// 2-second delay imitates a model call, so the async flow is visible.
+		model = predictor.Fake{Demand: 800, HorizonDays: 30, Delay: 2 * time.Second}
+		log.Print("predictor: fake (set ANTHROPIC_API_KEY to use a model)")
+	}
 
 	// *cache.Cache is both the forecast store and the distributed lock.
 	predictions := worker.New(worker.Config{
 		Workers:     4,
 		QueueSize:   100,
 		DedupWindow: 5 * time.Minute,
-		JobTimeout:  30 * time.Second,
+		// An agent loop makes several model calls; give it room.
+		JobTimeout: 60 * time.Second,
 	}, model, forecasts, forecasts)
 	predictions.Start()
 
