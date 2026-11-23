@@ -143,7 +143,17 @@ Every session ends with something that runs and a commit. If a session runs long
   - Development runs on Token Harbor's Anthropic-compatible endpoint with a free model: `ANTHROPIC_BASE_URL=https://tokenharbor.ai`, `ANTHROPIC_MODEL=mimo-v2.6-flash:free`. Switch to a Claude model for the final demo.
   - First real run, SKU-3: forecast 585 units vs 544 sold in the last 30 days (+7.5%, consistent with the upward trend); the model ignored today's zero as a non-stockout.
   - Backlog idea: a deterministic baseline (moving average) next to the LLM forecast, to compare accuracy and as a fallback.
-- **Next: session 6** — LocalStack, Terraform and the SQS FIFO reorder queue.
+- **Session 6 — done (2026-11-21).** LocalStack 4.14.0 (last auth-free community release) in the dev stack with only SQS; Terraform and AWS CLI as dev container features; `infra/modules/reorder-queue` (FIFO queue + FIFO dead-letter queue, `maxReceiveCount` 5) applied by `infra/envs/local`; `internal/reorder`: `Evaluator` (stock vs `ReorderQuantity`) and `SQSPublisher` (aws-sdk-go-v2, `MessageGroupId` = SKU, `MessageDeduplicationId` = SKU + forecast timestamp); worker `Config.OnForecast` hook; `SQS_REORDER_QUEUE_URL` (empty = off); `scripts/integration_test.sh` end to end (sale → forecast → `/inventory` → SQS message, quantities must match). Tests include a LocalStack round trip proving FIFO deduplication.
+  - `.devcontainer/` cannot be written by Claude's remote tools; edits there are made by hand.
+  - `SQS_ENDPOINT_STRATEGY` must be `"off"` (quoted): `path` produces queue URLs the Terraform AWS provider rejects.
+  - LocalStack keeps no state across restarts: run `terraform apply` again after a restart (the integration script does it).
+  - Known gap (backlog): forecast and reorder message are not written atomically; a Transactional Outbox in PostgreSQL would close it.
+- **Session 7 — done (2026-11-22).** Prometheus metrics on `GET /metrics` (HTTP latency by route template, worker queue depth, rejections, job outcomes, prediction duration, model tokens, reorders published); k6 v2.4.0 open-model load test (80/20 mix) run through `scripts/loadtest.sh`; worker dedups SKUs already waiting in the queue. Results in `loadtest/RESULTS.md`: README target met (2,500 req/s, p99 2–7 ms, 0 errors); knee near 5,000 req/s (p99 ~80 ms); saturation at ~4,630 req/s with p50 625 ms, matching Little's law. Queue dedup took queue-full rejections from 1,525 to 0.
+  - OpenTelemetry tracing moved to the backlog: without a trace backend (Jaeger/Tempo, out of scope) traces would go nowhere.
+  - From this dev container, Docker's live output stream is cut after k6's banner (`docker run -i`, `docker start -a`); the script runs k6 detached and prints `docker logs` at the end.
+  - The Docker Desktop VM pauses ~4 s about every 33 s; it sets every run's max latency, not the API.
+  - Backlog: local L1 cache of recently forecast SKUs in front of the Redis lock (86% of enqueues still reach Redis only to be skipped); identify the saturation bottleneck with `docker stats` or k6 on another machine.
+- **Next: session 8** — real AWS (RDS PostgreSQL with Terraform, smoke test, destroy), GitHub Actions CI, final README.
 
 ## 7. Before session 1
 
