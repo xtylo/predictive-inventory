@@ -163,6 +163,8 @@ func (c *Claude) Predict(ctx context.Context, sku string) (Forecast, error) {
 		}
 		inputTokens += msg.Usage.InputTokens
 		outputTokens += msg.Usage.OutputTokens
+		modelTokens.WithLabelValues("input").Add(float64(msg.Usage.InputTokens))
+		modelTokens.WithLabelValues("output").Add(float64(msg.Usage.OutputTokens))
 
 		// Claude's reply becomes part of the history for the next call.
 		messages = append(messages, msg.ToParam())

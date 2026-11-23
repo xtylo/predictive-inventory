@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/xtylo/predictive-inventory/internal/cache"
 	"github.com/xtylo/predictive-inventory/internal/store"
@@ -50,6 +51,12 @@ type Dependencies struct {
 func NewRouter(deps Dependencies) *gin.Engine {
 	// gin.Default() attaches request logging and panic recovery middlewares.
 	router := gin.Default()
+	router.Use(metricsMiddleware())
+
+	// Prometheus scrapes this endpoint. promhttp serves the default registry,
+	// which also includes Go runtime metrics (goroutines, GC, memory).
+	// gin.WrapH adapts a standard net/http handler to Gin.
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Liveness endpoint used by Docker, load balancers and smoke tests.
 	router.GET("/health", func(c *gin.Context) {

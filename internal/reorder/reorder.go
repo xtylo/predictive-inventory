@@ -68,5 +68,6 @@ func (e *Evaluator) Evaluate(ctx context.Context, f cache.Forecast) (bool, error
 	if err != nil {
 		return false, fmt.Errorf("publish reorder: %w", err)
 	}
+	reordersPublished.Inc()
 	return true, nil
 }

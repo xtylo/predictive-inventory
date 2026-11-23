@@ -100,6 +100,7 @@ func (p *Pool) Enqueue(sku string) error {
 	defer p.mu.RUnlock()
 
 	if p.closed {
+		enqueueRejected.WithLabelValues("closed").Inc()
 		return ErrClosed
 	}
 
@@ -107,8 +108,11 @@ func (p *Pool) Enqueue(sku string) error {
 	// room, default runs immediately. That is the whole back-pressure trick.
 	select {
 	case p.queue <- sku:
+		// len on a buffered channel is the number of queued items.
+		queueDepth.Set(float64(len(p.queue)))
 		return nil
 	default:
+		enqueueRejected.WithLabelValues("full").Inc()
 		return ErrQueueFull
 	}
 }
@@ -147,6 +151,7 @@ func (p *Pool) Shutdown(ctx context.Context) error {
 func (p *Pool) run() {
 	// range over a channel receives until the channel is closed and empty.
 	for sku := range p.queue {
+		queueDepth.Set(float64(len(p.queue)))
 		if p.ctx.Err() != nil {
 			continue // shutdown deadline passed: drop the remaining work
 		}
@@ -167,16 +172,21 @@ func (p *Pool) process(sku string) {
 	acquired, err := p.locker.TryLock(ctx, lockName, p.cfg.DedupWindow)
 	if err != nil {
 		log.Printf("worker: lock %s: %v", sku, err)
+		jobsProcessed.WithLabelValues(outcomeFailed).Inc()
 		return
 	}
 	if !acquired {
 		log.Printf("worker: %s forecast recently, skipped", sku)
+		jobsProcessed.WithLabelValues(outcomeSkipped).Inc()
 		return
 	}
 
+	start := time.Now()
 	forecast, err := p.predictor.Predict(ctx, sku)
+	predictionDuration.Observe(time.Since(start).Seconds())
 	if err != nil {
 		log.Printf("worker: predict %s: %v", sku, err)
+		jobsProcessed.WithLabelValues(outcomeFailed).Inc()
 		p.release(lockName)
 		return
 	}
@@ -190,11 +200,13 @@ func (p *Pool) process(sku string) {
 	}
 	if err := p.forecasts.SetForecast(ctx, stored); err != nil {
 		log.Printf("worker: store forecast %s: %v", sku, err)
+		jobsProcessed.WithLabelValues(outcomeFailed).Inc()
 		p.release(lockName)
 		return
 	}
 
 	log.Printf("worker: %s forecast updated, demand %d", sku, forecast.Demand)
+	jobsProcessed.WithLabelValues(outcomeSuccess).Inc()
 
 	if p.cfg.OnForecast != nil {
 		if err := p.cfg.OnForecast(ctx, stored); err != nil {
