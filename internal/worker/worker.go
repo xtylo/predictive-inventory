@@ -67,6 +67,13 @@ type Pool struct {
 	mu     sync.RWMutex
 	closed bool
 
+	// pending holds the SKUs currently waiting in the queue, so a SKU is
+	// never queued twice. A map with empty-struct values is Go's set: the
+	// values take no memory. Maps are not safe for concurrent use, hence
+	// pendingMu.
+	pendingMu sync.Mutex
+	pending   map[string]struct{}
+
 	// ctx is cancelled to abort in-flight work when shutdown runs out of time.
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -82,6 +89,7 @@ func New(cfg Config, p predictor.Predictor, forecasts ForecastWriter, locker Loc
 		forecasts: forecasts,
 		locker:    locker,
 		queue:     make(chan string, cfg.QueueSize),
+		pending:   make(map[string]struct{}),
 		ctx:       ctx,
 		cancel:    cancel,
 	}
@@ -94,7 +102,9 @@ func (p *Pool) Start() {
 	}
 }
 
-// Enqueue schedules a forecast for sku without blocking.
+// Enqueue schedules a forecast for sku without blocking. If sku is already
+// waiting in the queue, the call succeeds without adding a duplicate: the
+// pending job will produce the forecast the caller wants.
 func (p *Pool) Enqueue(sku string) error {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -104,10 +114,20 @@ func (p *Pool) Enqueue(sku string) error {
 		return ErrClosed
 	}
 
+	p.pendingMu.Lock()
+	defer p.pendingMu.Unlock()
+
+	// The comma-ok idiom: ok reports whether the key is in the map.
+	if _, ok := p.pending[sku]; ok {
+		enqueueDeduplicated.Inc()
+		return nil
+	}
+
 	// A select with a default case never blocks: if the channel has no
 	// room, default runs immediately. That is the whole back-pressure trick.
 	select {
 	case p.queue <- sku:
+		p.pending[sku] = struct{}{}
 		// len on a buffered channel is the number of queued items.
 		queueDepth.Set(float64(len(p.queue)))
 		return nil
@@ -151,6 +171,13 @@ func (p *Pool) Shutdown(ctx context.Context) error {
 func (p *Pool) run() {
 	// range over a channel receives until the channel is closed and empty.
 	for sku := range p.queue {
+		// Leaving the pending set before processing: a sale that arrives
+		// while this job runs can queue the SKU again, and the Redis lock
+		// then decides whether a new forecast is due.
+		p.pendingMu.Lock()
+		delete(p.pending, sku)
+		p.pendingMu.Unlock()
+
 		queueDepth.Set(float64(len(p.queue)))
 		if p.ctx.Err() != nil {
 			continue // shutdown deadline passed: drop the remaining work

@@ -18,6 +18,11 @@ var (
 		Help: "SKUs waiting in the prediction queue.",
 	})
 
+	enqueueDeduplicated = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "worker_enqueue_deduplicated_total",
+		Help: "Enqueue calls skipped because the SKU was already waiting in the queue.",
+	})
+
 	enqueueRejected = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "worker_enqueue_rejected_total",
 		Help: "Enqueue calls rejected, by reason (full, closed).",

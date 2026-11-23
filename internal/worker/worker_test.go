@@ -87,23 +87,55 @@ func TestOnePredictionPerSKUWithinWindow(t *testing.T) {
 	}
 }
 
+// waitFor polls cond until it is true or a second passes. Polling with a
+// deadline beats a fixed sleep: fast when the condition holds early, and
+// still bounded when it never does.
+func waitFor(t *testing.T, cond func() bool, what string) {
+	t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for %s", what)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 // When a prediction fails the lock is released, so the next trigger
 // retries instead of waiting for the whole dedup window.
 func TestFailedPredictionReleasesLock(t *testing.T) {
 	c := newTestCache(t)
 	pred := &countingPredictor{err: errors.New("model unavailable")}
-	pool := New(testConfig(1, 10), pred, c, c) // 1 worker: jobs run in order
+	pool := New(testConfig(1, 10), pred, c, c)
 	pool.Start()
 
-	for range 3 {
+	// One trigger at a time: each must reach the model, which proves the
+	// failed attempt before it did not leave the lock behind.
+	for want := int32(1); want <= 3; want++ {
 		if err := pool.Enqueue("SKU-1"); err != nil {
 			t.Fatalf("Enqueue() error: %v", err)
 		}
+		waitFor(t, func() bool { return pred.calls.Load() == want }, "a prediction attempt")
 	}
 	shutdown(t, pool)
+}
 
-	if got := pred.calls.Load(); got != 3 {
-		t.Errorf("predictor calls = %d, want 3", got)
+// A SKU already waiting in the queue is not queued again.
+func TestEnqueueDeduplicatesPendingSKU(t *testing.T) {
+	// No workers: nothing leaves the queue, so its length is observable.
+	pool := New(testConfig(0, 10), &countingPredictor{}, nil, nil)
+
+	for range 5 {
+		if err := pool.Enqueue("SKU-1"); err != nil {
+			t.Fatalf("Enqueue(SKU-1) error: %v", err)
+		}
+	}
+	if err := pool.Enqueue("SKU-2"); err != nil {
+		t.Fatalf("Enqueue(SKU-2) error: %v", err)
+	}
+
+	if got := len(pool.queue); got != 2 {
+		t.Errorf("queued jobs = %d, want 2 (one per distinct SKU)", got)
 	}
 }
 
@@ -111,12 +143,12 @@ func TestFailedPredictionReleasesLock(t *testing.T) {
 func TestEnqueueFailsWhenQueueIsFull(t *testing.T) {
 	pool := New(testConfig(0, 2), &countingPredictor{}, nil, nil)
 
-	for i := range 2 {
-		if err := pool.Enqueue("SKU-1"); err != nil {
-			t.Fatalf("Enqueue() #%d error: %v", i+1, err)
+	for _, sku := range []string{"SKU-1", "SKU-2"} {
+		if err := pool.Enqueue(sku); err != nil {
+			t.Fatalf("Enqueue(%s) error: %v", sku, err)
 		}
 	}
-	if err := pool.Enqueue("SKU-1"); !errors.Is(err, ErrQueueFull) {
+	if err := pool.Enqueue("SKU-3"); !errors.Is(err, ErrQueueFull) {
 		t.Errorf("third Enqueue() = %v, want ErrQueueFull", err)
 	}
 }

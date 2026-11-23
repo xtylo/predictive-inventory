@@ -1,0 +1,307 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /tmp/k6.js
+        output: -
+
+     scenarios: (100.00%) 2 scenarios, 3000 max VUs, 1m30s max duration (incl. graceful stop):
+              * reads: 8000.00 iterations/s for 1m0s (maxVUs: 200-2000, exec: readInventory, gracefulStop: 30s)
+              * writes: 2000.00 iterations/s for 1m0s (maxVUs: 100-1000, exec: recordSale, gracefulStop: 30s)
+
+
+running (0m01.0s), 1198/1210 VUs, 4787 complete and 0 interrupted iterations
+reads    [   2% ] 0894/0895 VUs  0m01.0s/1m0s  8000.00 iters/s
+writes   [   2% ] 0304/0315 VUs  0m01.0s/1m0s  2000.00 iters/s
+
+running (0m02.0s), 2261/2263 VUs, 8971 complete and 0 interrupted iterations
+reads    [   3% ] 1655/1656 VUs  0m02.0s/1m0s  8000.00 iters/s
+writes   [   3% ] 0606/0607 VUs  0m02.0s/1m0s  2000.00 iters/s
+time="2026-11-23T05:37:26Z" level=warning msg="Insufficient VUs, reached 2000 active VUs and cannot initialize more" executor=constant-arrival-rate scenario=reads
+
+running (0m03.0s), 2860/2860 VUs, 13586 complete and 0 interrupted iterations
+reads    [   5% ] 2000/2000 VUs  0m03.0s/1m0s  8000.00 iters/s
+writes   [   5% ] 0860/0860 VUs  0m03.0s/1m0s  2000.00 iters/s
+time="2026-11-23T05:37:27Z" level=warning msg="Insufficient VUs, reached 1000 active VUs and cannot initialize more" executor=constant-arrival-rate scenario=writes
+
+running (0m04.0s), 2999/3000 VUs, 17171 complete and 0 interrupted iterations
+reads    [   7% ] 2000/2000 VUs  0m04.0s/1m0s  8000.00 iters/s
+writes   [   7% ] 0999/1000 VUs  0m04.0s/1m0s  2000.00 iters/s
+
+running (0m05.0s), 3000/3000 VUs, 22269 complete and 0 interrupted iterations
+reads    [   8% ] 2000/2000 VUs  0m05.0s/1m0s  8000.00 iters/s
+writes   [   8% ] 1000/1000 VUs  0m05.0s/1m0s  2000.00 iters/s
+
+running (0m06.0s), 3000/3000 VUs, 26880 complete and 0 interrupted iterations
+reads    [  10% ] 2000/2000 VUs  0m06.0s/1m0s  8000.00 iters/s
+writes   [  10% ] 1000/1000 VUs  0m06.0s/1m0s  2000.00 iters/s
+
+running (0m07.0s), 2996/3000 VUs, 31481 complete and 0 interrupted iterations
+reads    [  12% ] 2000/2000 VUs  0m07.0s/1m0s  8000.00 iters/s
+writes   [  12% ] 0996/1000 VUs  0m07.0s/1m0s  2000.00 iters/s
+
+running (0m08.0s), 2998/3000 VUs, 36564 complete and 0 interrupted iterations
+reads    [  13% ] 2000/2000 VUs  0m08.0s/1m0s  8000.00 iters/s
+writes   [  13% ] 0998/1000 VUs  0m08.0s/1m0s  2000.00 iters/s
+
+running (0m09.0s), 3000/3000 VUs, 41321 complete and 0 interrupted iterations
+reads    [  15% ] 2000/2000 VUs  0m09.0s/1m0s  8000.00 iters/s
+writes   [  15% ] 1000/1000 VUs  0m09.0s/1m0s  2000.00 iters/s
+
+running (0m10.0s), 2998/3000 VUs, 45845 complete and 0 interrupted iterations
+reads    [  17% ] 1998/2000 VUs  0m10.0s/1m0s  8000.00 iters/s
+writes   [  17% ] 0999/1000 VUs  0m10.0s/1m0s  2000.00 iters/s
+
+running (0m11.0s), 2998/3000 VUs, 49872 complete and 0 interrupted iterations
+reads    [  18% ] 2000/2000 VUs  0m11.0s/1m0s  8000.00 iters/s
+writes   [  18% ] 0998/1000 VUs  0m11.0s/1m0s  2000.00 iters/s
+
+running (0m12.0s), 2998/3000 VUs, 54877 complete and 0 interrupted iterations
+reads    [  20% ] 2000/2000 VUs  0m12.0s/1m0s  8000.00 iters/s
+writes   [  20% ] 0998/1000 VUs  0m12.0s/1m0s  2000.00 iters/s
+
+running (0m16.3s), 2998/3000 VUs, 59835 complete and 0 interrupted iterations
+reads    [  22% ] 2000/2000 VUs  0m13.0s/1m0s  8000.00 iters/s
+writes   [  22% ] 0998/1000 VUs  0m13.0s/1m0s  2000.00 iters/s
+
+running (0m17.3s), 2995/3000 VUs, 64647 complete and 0 interrupted iterations
+reads    [  23% ] 1998/2000 VUs  0m14.0s/1m0s  8000.00 iters/s
+writes   [  23% ] 0997/1000 VUs  0m14.0s/1m0s  2000.00 iters/s
+
+running (0m18.3s), 2996/3000 VUs, 69788 complete and 0 interrupted iterations
+reads    [  25% ] 1998/2000 VUs  0m15.0s/1m0s  8000.00 iters/s
+writes   [  25% ] 0998/1000 VUs  0m15.0s/1m0s  2000.00 iters/s
+
+running (0m19.3s), 3000/3000 VUs, 75060 complete and 0 interrupted iterations
+reads    [  27% ] 2000/2000 VUs  0m16.0s/1m0s  8000.00 iters/s
+writes   [  27% ] 1000/1000 VUs  0m16.0s/1m0s  2000.00 iters/s
+
+running (0m20.3s), 2999/3000 VUs, 79746 complete and 0 interrupted iterations
+reads    [  28% ] 1999/2000 VUs  0m17.0s/1m0s  8000.00 iters/s
+writes   [  28% ] 1000/1000 VUs  0m17.0s/1m0s  2000.00 iters/s
+
+running (0m21.3s), 2999/3000 VUs, 84390 complete and 0 interrupted iterations
+reads    [  30% ] 2000/2000 VUs  0m18.0s/1m0s  8000.00 iters/s
+writes   [  30% ] 0999/1000 VUs  0m18.0s/1m0s  2000.00 iters/s
+
+running (0m22.3s), 2999/3000 VUs, 89121 complete and 0 interrupted iterations
+reads    [  32% ] 2000/2000 VUs  0m19.0s/1m0s  8000.00 iters/s
+writes   [  32% ] 0999/1000 VUs  0m19.0s/1m0s  2000.00 iters/s
+
+running (0m23.3s), 3000/3000 VUs, 94221 complete and 0 interrupted iterations
+reads    [  33% ] 2000/2000 VUs  0m20.0s/1m0s  8000.00 iters/s
+writes   [  33% ] 1000/1000 VUs  0m20.0s/1m0s  2000.00 iters/s
+
+running (0m24.3s), 3000/3000 VUs, 98588 complete and 0 interrupted iterations
+reads    [  35% ] 2000/2000 VUs  0m21.0s/1m0s  8000.00 iters/s
+writes   [  35% ] 1000/1000 VUs  0m21.0s/1m0s  2000.00 iters/s
+
+running (0m25.3s), 2998/3000 VUs, 102652 complete and 0 interrupted iterations
+reads    [  37% ] 2000/2000 VUs  0m22.0s/1m0s  8000.00 iters/s
+writes   [  37% ] 0998/1000 VUs  0m22.0s/1m0s  2000.00 iters/s
+
+running (0m26.3s), 2999/3000 VUs, 107027 complete and 0 interrupted iterations
+reads    [  38% ] 2000/2000 VUs  0m23.0s/1m0s  8000.00 iters/s
+writes   [  38% ] 0999/1000 VUs  0m23.0s/1m0s  2000.00 iters/s
+
+running (0m27.3s), 2974/3000 VUs, 111283 complete and 0 interrupted iterations
+reads    [  40% ] 1974/2000 VUs  0m24.0s/1m0s  8000.00 iters/s
+writes   [  40% ] 1000/1000 VUs  0m24.0s/1m0s  2000.00 iters/s
+
+running (0m28.3s), 3000/3000 VUs, 114448 complete and 0 interrupted iterations
+reads    [  42% ] 2000/2000 VUs  0m25.0s/1m0s  8000.00 iters/s
+writes   [  42% ] 1000/1000 VUs  0m25.0s/1m0s  2000.00 iters/s
+
+running (0m29.3s), 2998/3000 VUs, 117023 complete and 0 interrupted iterations
+reads    [  43% ] 1998/2000 VUs  0m26.0s/1m0s  8000.00 iters/s
+writes   [  43% ] 1000/1000 VUs  0m26.0s/1m0s  2000.00 iters/s
+
+running (0m30.3s), 3000/3000 VUs, 120343 complete and 0 interrupted iterations
+reads    [  45% ] 2000/2000 VUs  0m27.0s/1m0s  8000.00 iters/s
+writes   [  45% ] 1000/1000 VUs  0m27.0s/1m0s  2000.00 iters/s
+
+running (0m31.3s), 2999/3000 VUs, 123998 complete and 0 interrupted iterations
+reads    [  47% ] 2000/2000 VUs  0m28.0s/1m0s  8000.00 iters/s
+writes   [  47% ] 0999/1000 VUs  0m28.0s/1m0s  2000.00 iters/s
+
+running (0m32.3s), 2999/3000 VUs, 127462 complete and 0 interrupted iterations
+reads    [  48% ] 2000/2000 VUs  0m29.0s/1m0s  8000.00 iters/s
+writes   [  48% ] 0999/1000 VUs  0m29.0s/1m0s  2000.00 iters/s
+
+running (0m33.3s), 3000/3000 VUs, 131462 complete and 0 interrupted iterations
+reads    [  50% ] 2000/2000 VUs  0m30.0s/1m0s  8000.00 iters/s
+writes   [  50% ] 1000/1000 VUs  0m30.0s/1m0s  2000.00 iters/s
+
+running (0m34.3s), 3000/3000 VUs, 136025 complete and 0 interrupted iterations
+reads    [  52% ] 2000/2000 VUs  0m31.0s/1m0s  8000.00 iters/s
+writes   [  52% ] 1000/1000 VUs  0m31.0s/1m0s  2000.00 iters/s
+
+running (0m35.3s), 3000/3000 VUs, 140198 complete and 0 interrupted iterations
+reads    [  53% ] 2000/2000 VUs  0m32.0s/1m0s  8000.00 iters/s
+writes   [  53% ] 1000/1000 VUs  0m32.0s/1m0s  2000.00 iters/s
+
+running (0m36.3s), 2998/3000 VUs, 144839 complete and 0 interrupted iterations
+reads    [  55% ] 1999/2000 VUs  0m33.0s/1m0s  8000.00 iters/s
+writes   [  55% ] 0999/1000 VUs  0m33.0s/1m0s  2000.00 iters/s
+
+running (0m37.3s), 2995/3000 VUs, 149610 complete and 0 interrupted iterations
+reads    [  57% ] 1998/2000 VUs  0m34.0s/1m0s  8000.00 iters/s
+writes   [  57% ] 0997/1000 VUs  0m34.0s/1m0s  2000.00 iters/s
+
+running (0m38.3s), 2996/3000 VUs, 154749 complete and 0 interrupted iterations
+reads    [  58% ] 1999/2000 VUs  0m35.0s/1m0s  8000.00 iters/s
+writes   [  58% ] 0997/1000 VUs  0m35.0s/1m0s  2000.00 iters/s
+
+running (0m39.3s), 2997/3000 VUs, 160107 complete and 0 interrupted iterations
+reads    [  60% ] 1998/2000 VUs  0m36.0s/1m0s  8000.00 iters/s
+writes   [  60% ] 0999/1000 VUs  0m36.0s/1m0s  2000.00 iters/s
+
+running (0m40.3s), 2999/3000 VUs, 164280 complete and 0 interrupted iterations
+reads    [  62% ] 2000/2000 VUs  0m37.0s/1m0s  8000.00 iters/s
+writes   [  62% ] 0999/1000 VUs  0m37.0s/1m0s  2000.00 iters/s
+
+running (0m41.3s), 3000/3000 VUs, 169523 complete and 0 interrupted iterations
+reads    [  63% ] 2000/2000 VUs  0m38.0s/1m0s  8000.00 iters/s
+writes   [  63% ] 1000/1000 VUs  0m38.0s/1m0s  2000.00 iters/s
+
+running (0m42.3s), 2999/3000 VUs, 174329 complete and 0 interrupted iterations
+reads    [  65% ] 1999/2000 VUs  0m39.0s/1m0s  8000.00 iters/s
+writes   [  65% ] 1000/1000 VUs  0m39.0s/1m0s  2000.00 iters/s
+
+running (0m43.3s), 2998/3000 VUs, 179367 complete and 0 interrupted iterations
+reads    [  67% ] 2000/2000 VUs  0m40.0s/1m0s  8000.00 iters/s
+writes   [  67% ] 0998/1000 VUs  0m40.0s/1m0s  2000.00 iters/s
+
+running (0m44.3s), 2999/3000 VUs, 184274 complete and 0 interrupted iterations
+reads    [  68% ] 2000/2000 VUs  0m41.0s/1m0s  8000.00 iters/s
+writes   [  68% ] 0999/1000 VUs  0m41.0s/1m0s  2000.00 iters/s
+
+running (0m45.3s), 2998/3000 VUs, 189533 complete and 0 interrupted iterations
+reads    [  70% ] 2000/2000 VUs  0m42.0s/1m0s  8000.00 iters/s
+writes   [  70% ] 0998/1000 VUs  0m42.0s/1m0s  2000.00 iters/s
+
+running (0m49.7s), 2999/3000 VUs, 194671 complete and 0 interrupted iterations
+reads    [  72% ] 2000/2000 VUs  0m43.0s/1m0s  8000.00 iters/s
+writes   [  72% ] 0999/1000 VUs  0m43.0s/1m0s  2000.00 iters/s
+
+running (0m50.7s), 2998/3000 VUs, 199791 complete and 0 interrupted iterations
+reads    [  73% ] 2000/2000 VUs  0m44.0s/1m0s  8000.00 iters/s
+writes   [  73% ] 0998/1000 VUs  0m44.0s/1m0s  2000.00 iters/s
+
+running (0m51.7s), 3000/3000 VUs, 204531 complete and 0 interrupted iterations
+reads    [  75% ] 2000/2000 VUs  0m45.0s/1m0s  8000.00 iters/s
+writes   [  75% ] 1000/1000 VUs  0m45.0s/1m0s  2000.00 iters/s
+
+running (0m52.7s), 3000/3000 VUs, 208716 complete and 0 interrupted iterations
+reads    [  77% ] 2000/2000 VUs  0m46.0s/1m0s  8000.00 iters/s
+writes   [  77% ] 1000/1000 VUs  0m46.0s/1m0s  2000.00 iters/s
+
+running (0m53.7s), 2995/3000 VUs, 213486 complete and 0 interrupted iterations
+reads    [  78% ] 1997/2000 VUs  0m47.0s/1m0s  8000.00 iters/s
+writes   [  78% ] 0998/1000 VUs  0m47.0s/1m0s  2000.00 iters/s
+
+running (0m54.7s), 3000/3000 VUs, 217805 complete and 0 interrupted iterations
+reads    [  80% ] 2000/2000 VUs  0m48.0s/1m0s  8000.00 iters/s
+writes   [  80% ] 1000/1000 VUs  0m48.0s/1m0s  2000.00 iters/s
+
+running (0m55.7s), 2997/3000 VUs, 222637 complete and 0 interrupted iterations
+reads    [  82% ] 1999/2000 VUs  0m49.0s/1m0s  8000.00 iters/s
+writes   [  82% ] 0998/1000 VUs  0m49.0s/1m0s  2000.00 iters/s
+
+running (0m56.7s), 2999/3000 VUs, 227300 complete and 0 interrupted iterations
+reads    [  83% ] 2000/2000 VUs  0m50.0s/1m0s  8000.00 iters/s
+writes   [  83% ] 0999/1000 VUs  0m50.0s/1m0s  2000.00 iters/s
+
+running (0m57.7s), 3000/3000 VUs, 231942 complete and 0 interrupted iterations
+reads    [  85% ] 2000/2000 VUs  0m51.0s/1m0s  8000.00 iters/s
+writes   [  85% ] 1000/1000 VUs  0m51.0s/1m0s  2000.00 iters/s
+
+running (0m58.7s), 2997/3000 VUs, 236021 complete and 0 interrupted iterations
+reads    [  87% ] 1998/2000 VUs  0m52.0s/1m0s  8000.00 iters/s
+writes   [  87% ] 0999/1000 VUs  0m52.0s/1m0s  2000.00 iters/s
+
+running (0m59.7s), 2990/3000 VUs, 240862 complete and 0 interrupted iterations
+reads    [  88% ] 1992/2000 VUs  0m53.0s/1m0s  8000.00 iters/s
+writes   [  88% ] 0998/1000 VUs  0m53.0s/1m0s  2000.00 iters/s
+
+running (1m00.7s), 2996/3000 VUs, 245564 complete and 0 interrupted iterations
+reads    [  90% ] 2000/2000 VUs  0m54.0s/1m0s  8000.00 iters/s
+writes   [  90% ] 0996/1000 VUs  0m54.0s/1m0s  2000.00 iters/s
+
+running (1m01.7s), 2989/3000 VUs, 249885 complete and 0 interrupted iterations
+reads    [  92% ] 1991/2000 VUs  0m55.0s/1m0s  8000.00 iters/s
+writes   [  92% ] 0998/1000 VUs  0m55.0s/1m0s  2000.00 iters/s
+
+running (1m02.7s), 2998/3000 VUs, 254644 complete and 0 interrupted iterations
+reads    [  93% ] 2000/2000 VUs  0m56.0s/1m0s  8000.00 iters/s
+writes   [  93% ] 0998/1000 VUs  0m56.0s/1m0s  2000.00 iters/s
+
+running (1m03.7s), 2999/3000 VUs, 259639 complete and 0 interrupted iterations
+reads    [  95% ] 2000/2000 VUs  0m57.0s/1m0s  8000.00 iters/s
+writes   [  95% ] 0999/1000 VUs  0m57.0s/1m0s  2000.00 iters/s
+
+running (1m04.7s), 2988/3000 VUs, 264809 complete and 0 interrupted iterations
+reads    [  97% ] 1992/2000 VUs  0m58.0s/1m0s  8000.00 iters/s
+writes   [  97% ] 0996/1000 VUs  0m58.0s/1m0s  2000.00 iters/s
+
+running (1m05.7s), 2998/3000 VUs, 269955 complete and 0 interrupted iterations
+reads    [  98% ] 2000/2000 VUs  0m59.0s/1m0s  8000.00 iters/s
+writes   [  98% ] 0998/1000 VUs  0m59.0s/1m0s  2000.00 iters/s
+
+running (1m06.7s), 2998/3000 VUs, 274704 complete and 0 interrupted iterations
+reads    [ 100% ] 2000/2000 VUs  1m00.0s/1m0s  8000.00 iters/s
+writes   [ 100% ] 0998/1000 VUs  1m00.0s/1m0s  2000.00 iters/s
+
+
+  █ THRESHOLDS 
+
+    http_req_duration{scenario:reads}
+    ✗ 'p(99)<200' p(99)=3.95s
+
+    http_req_duration{scenario:writes}
+    ✗ 'p(99)<200' p(99)=3.95s
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 277832  4128.969375/s
+    checks_succeeded...: 100.00% 277832 out of 277832
+    checks_failed......: 0.00%   0 out of 277832
+
+    ✓ inventory 200
+    ✓ sale 201
+
+    HTTP
+    http_req_duration..............: avg=709.25ms p(50)=624.99ms p(95)=934.27ms p(99)=3.95s max=4.04s
+      { expected_response:true }...: avg=709.25ms p(50)=624.99ms p(95)=934.27ms p(99)=3.95s max=4.04s
+      { scenario:reads }...........: avg=706.2ms  p(50)=623.21ms p(95)=932.35ms p(99)=3.95s max=4.04s
+      { scenario:writes }..........: avg=715.48ms p(50)=628.53ms p(95)=938.01ms p(99)=3.95s max=4.04s
+    http_req_failed................: 0.00%  0 out of 277832
+    http_reqs......................: 277832 4128.969375/s
+
+    EXECUTION
+    dropped_iterations.............: 322169 4787.878771/s
+    iteration_duration.............: avg=636.77ms p(50)=619.98ms p(95)=831.39ms p(99)=1.07s max=1.17s
+    iterations.....................: 277832 4128.969375/s
+    vus............................: 2998   min=1196        max=3000
+    vus_max........................: 3000   min=1208        max=3000
+
+    NETWORK
+    data_received..................: 71 MB  1.1 MB/s
+    data_sent......................: 33 MB  484 kB/s
+
+
+
+
+running (1m07.3s), 0000/3000 VUs, 277832 complete and 0 interrupted iterations
+reads  ✓ [ 100% ] 0000/2000 VUs  1m0s  8000.00 iters/s
+writes ✓ [ 100% ] 0000/1000 VUs  1m0s  2000.00 iters/s
+time="2026-11-23T05:38:31Z" level=error msg="thresholds on metrics 'http_req_duration{scenario:reads}, http_req_duration{scenario:writes}' have been crossed"
