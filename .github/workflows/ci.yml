@@ -1,0 +1,75 @@
+# Continuous integration: every push and pull request to main must format,
+# vet, test (unit and integration) and build before it is merged.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least privilege: the workflow only reads the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go (format, vet, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          # Same Go version as the project, read from go.mod.
+          go-version-file: go.mod
+
+      - name: Check formatting
+        # gofmt -l lists unformatted files; any output fails the step.
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Run gofmt -w on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      # GitHub's Ubuntu runners have Docker, so the testcontainers-go
+      # integration tests run against a real PostgreSQL here too. The SQS
+      # round trip test skips itself: SQS_REORDER_QUEUE_URL is not set.
+      - name: Test
+        run: go test -race -count=1 ./...
+
+      - name: Build the container image
+        run: docker build --tag predictive-inventory:ci .
+
+  terraform:
+    name: Terraform (format, validate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive infra
+
+      # validate checks syntax and references without touching any cloud
+      # account; -backend=false skips state configuration.
+      - name: Validate
+        run: |
+          for env in infra/envs/*/; do
+            echo "== $env"
+            terraform -chdir="$env" init -backend=false -input=false
+            terraform -chdir="$env" validate
+          done
