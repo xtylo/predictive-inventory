@@ -153,7 +153,12 @@ Every session ends with something that runs and a commit. If a session runs long
   - From this dev container, Docker's live output stream is cut after k6's banner (`docker run -i`, `docker start -a`); the script runs k6 detached and prints `docker logs` at the end.
   - The Docker Desktop VM pauses ~4 s about every 33 s; it sets every run's max latency, not the API.
   - Backlog: local L1 cache of recently forecast SKUs in front of the Redis lock (86% of enqueues still reach Redis only to be skipped); identify the saturation bottleneck with `docker stats` or k6 on another machine.
-- **Next: session 8** — real AWS (RDS PostgreSQL with Terraform, smoke test, destroy), GitHub Actions CI, final README.
+- **Session 8 — done (2026-11-23).** `infra/envs/aws`: the shared reorder-queue module plus RDS PostgreSQL 17 (`db.t4g.micro`, 20 GB gp3, encrypted, no backups), a security group open only to the developer's `/32`, and a generated password exposed only through the sensitive `postgres_dsn` output. Smoke test: the same binary ran against RDS (embedded migrations created the schema) and a real SQS FIFO queue; sale → forecast → reorder message of 201 units; then `terraform destroy` (6 resources). GitHub Actions CI (gofmt, vet, `go test -race` with testcontainers, image build, `terraform fmt` and `validate`) plus Dependabot. Final `README.md`.
+  - `.github/` is also protected from Claude's remote tools; workflow files are saved by hand.
+  - In the AWS terminal: `unset AWS_ENDPOINT_URL AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY` first, or every call still goes to LocalStack.
+  - A one-off `proxy.golang.org` HTTP/2 error failed CI once and passed on re-run. If it recurs, add a `go mod download` step with retries before `Vet`.
+  - No load test against RDS: from a laptop, each sale's database round trips would measure the network. Backlog: deploy the API next to RDS.
+- **Project complete.** Backlog lives in the README.
 
 ## 7. Before session 1
 
